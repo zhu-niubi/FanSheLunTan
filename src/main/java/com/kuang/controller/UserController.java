@@ -8,13 +8,12 @@ import com.kuang.pojo.Blog;
 import com.kuang.pojo.Comment;
 import com.kuang.pojo.Question;
 import com.kuang.pojo.UserInfo;
-import com.kuang.service.BlogService;
-import com.kuang.service.CommentService;
-import com.kuang.service.QuestionService;
-import com.kuang.service.UserInfoService;
+import com.kuang.result.R;
+import com.kuang.service.*;
 import com.kuang.utils.KuangUtils;
 import com.kuang.vo.LayerPhoto;
 import com.kuang.vo.LayerPhotoData;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,6 +38,8 @@ import java.util.UUID;
 @Controller
 public class UserController {
 
+    @Autowired
+    UserService userService;
     @Autowired
     UserInfoService userInfoService;
     @Autowired
@@ -171,7 +172,19 @@ public class UserController {
     }
 
     // 更新头像
-    // TODO: 2022/6/9
+    //上传头像
+    @ResponseBody
+    @ApiOperation(value = "文件上传")
+    @PostMapping("/upload")
+    public R uploadOssFile(@RequestParam("file") MultipartFile file){
+        //获取上传的文件
+
+        //返回上传到oss的路径
+        String url =userService.uploadFileAvatar(file);
+
+        //返回r对象
+        return R.ok().data("url",url).message("文件上传成功");
+    }
 
     @GetMapping("/user/update-avatar/{uid}")
     public String toUpdateAvatar(@PathVariable String uid,Model model){

@@ -1,5 +1,7 @@
 package com.kuang.service.impl;
 
+import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kuang.pojo.User;
 import com.kuang.mapper.UserMapper;
@@ -7,7 +9,9 @@ import com.kuang.pojo.UserRole;
 import com.kuang.service.UserRoleService;
 import com.kuang.service.UserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kuang.utils.ConstantPropertiesUtil;
 import com.kuang.utils.KuangUtils;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,12 +19,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.management.relation.Role;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 // UserDetailsService接口用于返回用户相关数据。
 // 它有loadUserByUsername()方法，根据username查询用户实体，可以实现该接口覆盖该方法，实现自定义获取用户过程。
@@ -72,5 +80,53 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         authList.add(new SimpleGrantedAuthority("ROLE_"+role.getName()));
         return authList;
     }
+
+
+    @Override
+    public String uploadFileAvatar(MultipartFile file) {
+            //工具类获取值
+            String endpoint = ConstantPropertiesUtil.END_POINT;
+            String accessKeyId = ConstantPropertiesUtil.KEY_ID;
+            String accessKeySecret = ConstantPropertiesUtil.KEY_SECRET;
+            String bucketName = ConstantPropertiesUtil.BUCKET_NAME;
+
+
+            InputStream inputStream = null;
+
+
+            try {
+                // 创建OSS实例。
+                OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+
+                // 获取上传文件的输入流
+                inputStream = file.getInputStream();
+
+                //获取文件名称
+                String fileName = file.getOriginalFilename();
+                String uuid = UUID.randomUUID().toString().replaceAll("-","");
+                fileName = uuid + fileName;
+                String datePath = new DateTime().toString("yyyy/MM/dd");
+                //调用oss实例中的方法实现上传
+                //参数1： Bucket名称
+                //参数2： 上传到oss文件路径和文件名称 /aa/bb/1.jpg
+                //参数3： 上传文件的输入流
+                ossClient.putObject(bucketName, fileName, inputStream);
+                // 关闭OSSClient。
+                ossClient.shutdown();
+
+                //把上传后文件路径返回
+                //需要把上传到阿里云oss路径手动拼接出来
+                //https://achang-edu.oss-cn-hangzhou.aliyuncs.com/default.gif
+                String url = "http://"+bucketName+"."+endpoint+"/"+fileName ;
+
+                return url;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+
+
 
 }
